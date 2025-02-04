@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mời bạn chọn đơn vị</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 50px auto;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            width: 100%;
+            height: auto;
+        }
+        .spin-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 16px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .spin-button:active {
+            background-color: darkred;
+        }
+        .pointer {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 50px solid black;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Mời bạn chọn đơn vị</h1>
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas"></canvas>
+        <button class="spin-button" id="spinButton">Quay</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const canvas = document.getElementById('wheelCanvas');
+            const ctx = canvas.getContext('2d');
+            const size = 300;
+            canvas.width = size;
+            canvas.height = size;
+
+            const units = [
+                "CA xã", "CA Phường", "PV01", "PX01", "PX03", "PX05", "PX06", "PV06", "PV05", "PH10",
+                "Trung tâm CN", "PA01", "PA02", "PA03", "PA04", "PA05", "PA06", "PA08", "PA09",
+                "PC01", "PC02", "PC03", "PC04", "PC06", "PC07", "PC08", "PC09", "PC10", "PC11", "PK02"
+            ];
+            const colors = Array.from({ length: units.length }, () => `hsl(${Math.random() * 360}, 100%, 70%)`);
+            const anglePerSegment = (2 * Math.PI) / units.length;
+            let currentAngle = 0;
+            let spinning = false;
+
+            function drawWheel() {
+                const radius = size / 2;
+
+                ctx.clearRect(0, 0, size, size);
+                ctx.translate(radius, radius);
+
+                for (let i = 0; i < units.length; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.arc(0, 0, radius, anglePerSegment * i, anglePerSegment * (i + 1));
+                    ctx.closePath();
+                    ctx.fillStyle = colors[i];
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.save();
+                    ctx.rotate(anglePerSegment * i + anglePerSegment / 2);
+                    ctx.fillStyle = 'black';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(units[i], radius * 0.7, 5);
+                    ctx.restore();
+                }
+
+                ctx.translate(-radius, -radius);
+            }
+
+            function spinWheel() {
+                if (spinning) return;
+                spinning = true;
+
+                const spinButton = document.getElementById("spinButton");
+                spinButton.disabled = true;
+
+                const spinTime = 3000;
+                const spinAngle = Math.random() * 2 * Math.PI + 10 * Math.PI; // Random angle with extra rotations
+                const startAngle = currentAngle;
+                const endAngle = currentAngle + spinAngle;
+
+                const start = performance.now();
+
+                function animate(time) {
+                    const elapsed = time - start;
+                    const progress = Math.min(elapsed / spinTime, 1);
+                    currentAngle = startAngle + (endAngle - startAngle) * easeOutQuad(progress);
+
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.translate(size / 2, size / 2);
+                    ctx.rotate(currentAngle);
+                    ctx.translate(-size / 2, -size / 2);
+                    drawWheel();
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        spinning = false;
+                        spinButton.disabled = false; // Re-enable button after spin
+                    }
+                }
+
+                requestAnimationFrame(animate);
+            }
+
+            function easeOutQuad(t) {
+                return t * (2 - t);
+            }
+
+            drawWheel();
+
+            document.getElementById("spinButton").addEventListener("click", spinWheel);
+        });
+    </script>
+
+</body>
+</html>
